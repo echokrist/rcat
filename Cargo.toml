@@ -2,5 +2,15 @@
 name = "rcat"
 version = "0.1.0"
 edition = "2024"
-authors = ["echokrist"]
+authors = ["echokrist<echokrist@pm.me>"]
 [dependencies]
+
+[profile.release]
+opt-level = 3          
+debug = false          
+split-debuginfo = "packed"   
+lto = true             
+codegen-units = 1       
+panic = "abort"
+incremental = false    
+strip = true         
