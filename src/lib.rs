@@ -59,23 +59,25 @@ mod tests {
             env::remove_var("RCAT_TEST_ARGS");
         }
     }
-
     #[test]
     fn read_lines_success() -> Result<(), Box<dyn std::error::Error>> {
         let tmp_path = create_temp_file(&["alpha", "beta"]);
 
         let lines: Vec<String> = read_lines(&tmp_path)?
-            .map(|res_bytes| {
-                res_bytes.and_then(|bytes| {
-                    String::from_utf8(bytes)
-                        .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidData, e))
-                })
+            .map(|res| {
+                let mut s = String::from_utf8(res?)?;
+                if s.ends_with('\n') {
+                    s.pop();
+                    if s.ends_with('\r') {
+                        s.pop();
+                    }
+                }
+                Ok(s)
             })
-            .collect::<Result<_, _>>()?;
+            .collect::<Result<_, Box<dyn std::error::Error>>>()?;
 
         assert_eq!(lines, vec!["alpha".to_string(), "beta".to_string()]);
-
-        fs::remove_file(tmp_path).expect("could not delete temp file");
+        fs::remove_file(tmp_path)?;
         Ok(())
     }
 }

@@ -36,19 +36,24 @@ pub fn read_lines<P: AsRef<Path>>(
         )
     })?;
     let reader = BufReader::with_capacity(128 * 1024, file);
-    Ok(reader.split(b'\n').map(move |res| {
-        res.map_err(|e| {
-            io::Error::new(
-                e.kind(),
-                format!("error while reading '{}': {}", path.display(), e),
-            )
-        })
-        .map(|mut line| {
-            if let Some(&b'\r') = line.last() {
-                line.pop();
+    let mut iter = reader.split(b'\n').peekable();
+    Ok(std::iter::from_fn(move || {
+        let next = iter.next()?;
+        let line = match next {
+            Ok(mut l) => {
+                if iter.peek().is_some() {
+                    l.push(b'\n');
+                }
+                l
             }
-            line
-        })
+            Err(e) => {
+                return Some(Err(io::Error::new(
+                    e.kind(),
+                    format!("error while reading '{}': {}", path.display(), e),
+                )));
+            }
+        };
+        Some(Ok(line))
     }))
 }
 
